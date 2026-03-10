@@ -1,0 +1,153 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Group {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  admin     User?    @relation(fields: [adminId], references: [id])
+  adminId   Int?
+
+  // Many-to-many relationships via join tables
+  userGroups   UserGroup[]
+  groupPosts   GroupPost[]
+  joinedGroups joinedGroup[]
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  admin     Admin?   @relation(fields: [adminId], references: [id])
+  adminId   Int?
+
+  // Many-to-many relationship with Group
+  // groupPosts GroupPost[]
+  likes Like[]
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  firstName String
+  lastName  String
+  email     String   @unique
+  userName  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One-to-many relationship with Post
+  posts Post[]
+
+  // Many-to-many relationships via join tables
+  payments     Payment?
+  userGroups   UserGroup[]
+  joinedGroups joinedGroup[]
+  groups       Group[]
+  groupPosts   GroupPost[]
+  likes        Like[]
+}
+
+// Join table for User and Group many-to-many relationship
+model UserGroup {
+  id      Int   @id @default(autoincrement())
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  Int
+  groups  Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId Int
+  // joinedAt DateTime @default((now()))
+
+  @@unique([userId, groupId])
+}
+
+model Like {
+  id        Int       @id @default(autoincrement())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  post      Post      @relation(fields: [post_Id], references: [id], onDelete: Cascade)
+  post_Id   Int
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@map("post_likes")
+}
+
+// Join table for Post and Group many-to-many relationship
+model GroupPost {
+  id        Int      @id @default(autoincrement())
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId   Int
+  // post    Post  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  // postId  Int
+  message   String   @default("")
+  // post    Post?  @relation(fields: [postId], references: [id])
+  // postId  Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int?
+  createdAt DateTime @default(now())
+
+  // @@unique([groupId])
+}
+
+model Payment {
+  id               Int           @id @default(autoincrement())
+  userId           Int           @unique
+  reference        String        @unique
+  amount           Float
+  email            String
+  status           PaymentStatus @default(PENDING)
+  channel          String?
+  currency         String?
+  subscriptionType String?
+  paidAt           DateTime?
+  metadata         Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+model joinedGroup {
+  id       Int      @id @default(autoincrement())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   Int
+  joinedAt DateTime @default(now())
+  groups   Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId  Int
+
+  @@unique([userId, groupId])
+}
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  firstName String
+  lastName  String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // groups    Group[]
+  posts     Post[]
+}
