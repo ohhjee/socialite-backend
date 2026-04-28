@@ -11,7 +11,7 @@ export function registeredRoutes(): express.Router {
     res.json({ message: "Welcome to the API", status: "OK" });
   });
 
-  route.use("/api/v1", apiV1Routes());
+  route.use("/api/v1", express.static("public/uploads"), apiV1Routes());
   //   route.use("/health", async (_: Request, res: Response) => {
   //     try {
   //       const dbHealth = await prismaService.healthCheck();

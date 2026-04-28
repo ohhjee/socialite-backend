@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -11,15 +8,32 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ConversationType {
+  DM
+  GROUP
+}
+
+enum Interval {
+  ANNUAL
+  MONTHLY
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
 model Group {
   id        Int      @id @default(autoincrement())
+  ref       String   @unique @default(uuid())
   name      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   admin     User?    @relation(fields: [adminId], references: [id])
   adminId   Int?
 
-  // Many-to-many relationships via join tables
   userGroups   UserGroup[]
   groupPosts   GroupPost[]
   joinedGroups joinedGroup[]
@@ -27,6 +41,7 @@ model Group {
 
 model Post {
   id        Int      @id @default(autoincrement())
+  ref       String   @unique @default(uuid())
   title     String
   completed Boolean  @default(false)
   createdAt DateTime @default(now())
@@ -36,47 +51,47 @@ model Post {
   admin     Admin?   @relation(fields: [adminId], references: [id])
   adminId   Int?
 
-  // Many-to-many relationship with Group
-  // groupPosts GroupPost[]
   likes Like[]
 }
 
 model User {
   id        Int      @id @default(autoincrement())
+  ref       String   @unique @default(uuid())
   firstName String
   lastName  String
   email     String   @unique
   userName  String   @unique
   password  String
   createdAt DateTime @default(now())
+  avatarSrc String?
   updatedAt DateTime @updatedAt
+  bio       String?
 
-  // One-to-many relationship with Post
-  posts Post[]
-
-  // Many-to-many relationships via join tables
-  payments     Payment?
-  userGroups   UserGroup[]
-  joinedGroups joinedGroup[]
-  groups       Group[]
-  groupPosts   GroupPost[]
-  likes        Like[]
+  posts         Post[]
+  payments      Payment?
+  userGroups    UserGroup[]
+  joinedGroups  joinedGroup[]
+  groups        Group[]
+  groupPosts    GroupPost[]
+  likes         Like[]
+  conversations ConversationMember[]
+  sentMessages  Message[]            @relation("SentMessages")
 }
 
-// Join table for User and Group many-to-many relationship
 model UserGroup {
-  id      Int   @id @default(autoincrement())
-  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id      Int    @id @default(autoincrement())
+  ref     String @unique @default(uuid())
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId  Int
-  groups  Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groups  Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupId Int
-  // joinedAt DateTime @default((now()))
 
   @@unique([userId, groupId])
 }
 
 model Like {
   id        Int       @id @default(autoincrement())
+  ref       String    @unique @default(uuid())
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    Int
   post      Post      @relation(fields: [post_Id], references: [id], onDelete: Cascade)
@@ -87,50 +102,40 @@ model Like {
   @@map("post_likes")
 }
 
-// Join table for Post and Group many-to-many relationship
 model GroupPost {
   id        Int      @id @default(autoincrement())
+  ref       String   @unique @default(uuid())
   group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupId   Int
-  // post    Post  @relation(fields: [postId], references: [id], onDelete: Cascade)
-  // postId  Int
   message   String   @default("")
-  // post    Post?  @relation(fields: [postId], references: [id])
-  // postId  Int?
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    Int?
   createdAt DateTime @default(now())
-
-  // @@unique([groupId])
 }
 
 model Payment {
-  id               Int           @id @default(autoincrement())
-  userId           Int           @unique
-  reference        String        @unique
-  amount           Float
-  email            String
-  status           PaymentStatus @default(PENDING)
-  channel          String?
-  currency         String?
-  subscriptionType String?
-  paidAt           DateTime?
-  metadata         Json?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-
-  user User @relation(fields: [userId], references: [id])
-}
-
-enum PaymentStatus {
-  PENDING
-  SUCCESS
-  FAILED
-  CANCELLED
+  id                 Int           @id @default(autoincrement())
+  ref                String        @unique @default(uuid())
+  userId             Int           @unique
+  reference          String        @unique
+  amount             Float
+  email              String
+  status             PaymentStatus @default(PENDING)
+  channel            String?
+  currency           String?
+  subscriptionType   String?
+  interval           Interval      @default(MONTHLY)
+  paidAt             DateTime?     @default(now())
+  metadata           Json?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  authorization_code String?
+  user               User          @relation(fields: [userId], references: [id])
 }
 
 model joinedGroup {
   id       Int      @id @default(autoincrement())
+  ref      String   @unique @default(uuid())
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId   Int
   joinedAt DateTime @default(now())
@@ -142,12 +147,46 @@ model joinedGroup {
 
 model Admin {
   id        Int      @id @default(autoincrement())
+  ref       String   @unique @default(uuid())
   firstName String
   lastName  String
   email     String   @unique
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  // groups    Group[]
   posts     Post[]
+}
+
+model Conversation {
+  id        Int                  @id @default(autoincrement())
+  ref       String               @unique @default(uuid())
+  type      ConversationType     @default(DM)
+  name      String?
+  createdAt DateTime             @default(now())
+  members   ConversationMember[]
+  messages  Message[]
+}
+
+model ConversationMember {
+  id             Int          @id @default(autoincrement())
+  ref            String       @unique @default(uuid())
+  conversationId Int
+  userId         Int
+  isAdmin        Boolean      @default(false)
+  joinedAt       DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+}
+
+model Message {
+  id             Int          @id @default(autoincrement())
+  ref            String       @unique @default(uuid())
+  body           String
+  conversationId Int
+  senderId       Int
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id])
 }

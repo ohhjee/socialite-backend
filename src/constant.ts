@@ -11,3 +11,4 @@ export const redisHost = process.env.Redis_Host || "localhost";
 
 export const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY || "";
 export const paystackBaseUrl = process.env.PAYSTACK_BASE_URL || "";
+export const paystackPort = process.env.paystackPort || "";

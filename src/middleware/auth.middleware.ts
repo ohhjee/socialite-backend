@@ -13,7 +13,7 @@ interface DecodedToken {
 export const authenticationMiddleware = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
@@ -37,7 +37,7 @@ export const authenticationMiddleware = async (
 
     // Check if token is blacklisted
     const isBlacklisted = await redisService.isTokenBlacklist(
-      decoded.id.toString()
+      decoded.id.toString(),
     );
     if (isBlacklisted) {
       res

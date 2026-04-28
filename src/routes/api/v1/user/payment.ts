@@ -4,12 +4,14 @@ import { Router } from "express";
 const route = Router();
 
 export function paymentRoute(): Router {
-  route.post("/initialize", paymentController.createPayment);
-  route.get(
-    "/verify",
-    // authenticate,               ← strongly recommended
-    paymentController.verifyPayment,
-  );
+  route.post("/acceptPayment", paymentController.createPayment);
+  route
+    .get(
+      "/verify",
+      // authenticate,               ← strongly recommended
+      paymentController.verifyPayment,
+    )
+    .get("/history", paymentController.getPaymentStatus);
   // .get("/:userName/profile", dashboardController.getProfile)
   // .get("/:id/me", dashboardController.me);
 

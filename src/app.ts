@@ -14,6 +14,8 @@ import {
   errorHandler,
   type iError,
 } from "./core/filter/globalErrorHandler.filter";
+import path from "path";
+import { initSocket } from "./socket";
 const port = process.env.PORT || 3000;
 
 export class App {
@@ -25,7 +27,7 @@ export class App {
 
     await prismaService.onModuleInit();
     await redisService.waitForReady();
-
+    initSocket(this.httpServer);
     this.setupMiddlewares();
     this.setupRoutes();
     this.setupErrorHandling();
@@ -38,6 +40,10 @@ export class App {
     this.express.use(express.json());
     this.express.use(cors());
     this.express.use(express.urlencoded({ extended: true }));
+    this.express.use(
+      "/uploads",
+      express.static(path.join(process.cwd(), "public/uploads")),
+    );
   }
   private setupErrorHandling(): void {
     this.express.use(

@@ -31,20 +31,20 @@ class GroupController {
           admin: { connect: { id: user.id } },
         },
         include: {
-          joinedGroup: true,
+          joinedGroups: true,
         },
       });
       await prismaService.joinedGroup.create({
         data: {
           user: { connect: { id: user.id } },
-          group: { connect: { id: newGroup.id } },
+          groups: { connect: { id: newGroup.id } },
         },
       });
 
       const userGroup = await prismaService.group.findFirst({
         where: { id: newGroup.id },
         include: {
-          joinedGroup: { include: { user: true, group: true } },
+          joinedGroups: { include: { user: true, group: true } },
         },
       });
       await prismaService.userGroup.create({
@@ -204,7 +204,7 @@ class GroupController {
         where: { userId_groupId: { userId: user.id, groupId } },
       });
       const existingJoinedGroup = await prismaService.joinedGroup.findFirst({
-        where: { userId: user.id, groupId }, // 👈 findFirst not findUnique
+        where: { userId: user.id, groupId },
       });
 
       if (!existingUserGroup && !existingJoinedGroup) {

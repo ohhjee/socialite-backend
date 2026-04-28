@@ -1,12 +1,22 @@
 import { dashboardController } from "@/controllers/user/dashboard.controller";
-import { Router } from "express";
+import { uploadAvatar } from "@/middleware/upload";
+import express, { Router } from "express";
+import path from "path";
 const route = Router();
 
 export function UserDashboard(): Router {
   route
     .get("/", dashboardController.getOverview)
-    .get("/:userName/profile", dashboardController.getProfile)
-    .get("/:userName/me", dashboardController.me);
+    .get("/:ref/profile", dashboardController.getProfile)
+    .get("/:ref/me", dashboardController.me)
+    .put("/:ref/profile", dashboardController.updateProfile)
+    .put(
+      "/:ref/avatar",
+      // upload.single("avatar"),
+      uploadAvatar,
+      // express.static(path.join(__dirname, "../uploads")),
+      dashboardController.uploadAvatar,
+    );
 
   return route;
 }

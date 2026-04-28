@@ -61,7 +61,10 @@ class PostController {
     try {
       const user = req.user;
       const posts = await prismaService.post.findMany({
-        include: { user: true, likes: { where: { deletedAt: null } } },
+        include: {
+          user: { omit: { password: true } },
+          likes: { where: { deletedAt: null } },
+        },
       });
       const getCachedPost = redisService.getCachedPosts(`all_posts_${user.id}`);
       const postsWithMeta = posts.map((post) => ({

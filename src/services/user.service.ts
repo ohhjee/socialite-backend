@@ -7,7 +7,7 @@ class UserService {
    * Extract user data for JWT token
    */
   public extractUserDataForJWT(
-    user: User
+    user: User,
   ): Record<string, string | number | string[]> {
     return {
       id: user.id,
@@ -15,6 +15,7 @@ class UserService {
       userName: user.userName ?? "",
       firstName: user.firstName ?? "",
       lastName: user.lastName ?? "",
+      ref: user.ref ?? "",
     };
   }
 }

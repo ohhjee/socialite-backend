@@ -42,7 +42,12 @@ class PaymentController {
           email,
           amount: amountInKobo,
           callback_url: `${process.env.FRONTEND_URL}/dashboard/premium/verify`,
-          metadata: { userId, email, subscriptionType },
+          metadata: {
+            userId,
+            email,
+            subscriptionType,
+            cancel_url: `${process.env.FRONTEND_URL}/dashboard/premium/verify`,
+          },
         },
         {
           headers: {
@@ -54,59 +59,39 @@ class PaymentController {
 
       const paymentData = response.data;
 
+      log("response: ", paymentData);
+
       if (!paymentData.status || !paymentData.data?.authorization_url) {
         throw new Error("Paystack did not return a valid checkout URL");
       }
 
-      const existingPayment = await prismaService.payment.findFirst({
-        where: { userId },
-      });
-
-      if (existingPayment) {
-        // ✅ User already subscribed — UPDATE instead of creating a duplicate
-        await prismaService.payment.update({
-          where: { id: existingPayment.id },
-          data: {
-            reference: paymentData.data.reference, // new reference for new transaction
-            amount,
-            email,
-            status: "PENDING",
-            subscriptionType,
-          },
-        });
-
-        logger.info("Payment record updated for re-subscription", {
+      // ✅ Always create a new payment record for each transaction
+      await prismaService.payment.create({
+        data: {
           userId,
           reference: paymentData.data.reference,
-          subscriptionType,
-        });
-      } else {
-        // ✅ First time subscribing — CREATE
-        await prismaService.payment.create({
-          data: {
-            userId,
-            reference: paymentData.data.reference,
-            amount,
-            email,
-            status: "PENDING",
-            subscriptionType,
-          },
-        });
-
-        logger.info("Payment initialized for new subscriber", {
-          reference: paymentData.data.reference,
+          amount,
           email,
-          amount: amountInKobo,
-        });
-      }
+          status: "PENDING",
+          subscriptionType,
+          // paidAt: Date.now(),
+        },
+      });
+
+      logger.info("Payment initialized for new transaction", {
+        reference: paymentData.data.reference,
+        email,
+        amount: amountInKobo,
+        userId,
+      });
 
       return res.status(200).json({
         success: true,
-        message: "Payment initialized",
+        message: "Payment initialized!, Please do not reload the page",
         authorizationUrl: paymentData.data.authorization_url,
         reference: paymentData.data.reference,
         subscriptionType,
-        accessCode: paymentData.data.access_code,
+        // accessCode: paymentData.data.access_code,
       });
     } catch (error) {
       // Unwrap Axios/Paystack errors
@@ -183,8 +168,11 @@ class PaymentController {
         },
       );
 
+      // log("Payment verified", response);
       const data = response.data.data;
+      log("payment Data: ", data.authorization);
       const paystackStatus = data?.status; // "success" | "failed" | "abandoned"
+      // return;
 
       // ✅ Map Paystack status → your DB enum
       const statusMap: Record<string, "SUCCESS" | "FAILED" | "CANCELLED"> = {
@@ -204,6 +192,7 @@ class PaymentController {
           currency: data.currency,
           paidAt: data.paid_at ? new Date(data.paid_at) : null,
           metadata: data.metadata ?? {},
+          authorization_code: data.authorization.authorization_code,
         },
       });
 
@@ -214,6 +203,7 @@ class PaymentController {
       //     data: { isPremium: true },
       //   });
       // }
+      return;
 
       logger.info("Payment verified", { reference, status: newStatus });
 
@@ -245,8 +235,33 @@ class PaymentController {
       next(createHttpError(500, "Could not verify payment"));
     }
   };
+  public ChargePayment = async (
+    req: AuthenticationRequest,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const { amount, email, authorization_code } = req.body;
 
-  // ✅ New endpoint: user explicitly clicks "Cancel" before leaving Paystack page
+      const amountInKobo = amount * 100;
+      const response = await axios.get(
+        `${paystackBaseUrl}/transaction/charge_authorization`,
+        {
+          method: "POST",
+          data: {
+            email,
+            authorization_code,
+            amountInKobo,
+          },
+          headers: {
+            Authorization: `Bearer ${paystackSecretKey}`,
+          },
+        },
+      );
+      log("Charge response: ", response.data);
+    } catch (error) {}
+  };
+
   public cancelPayment = async (
     req: AuthenticationRequest,
     res: Response,
@@ -289,6 +304,48 @@ class PaymentController {
       });
     } catch (error) {
       next(createHttpError(500, "Could not cancel payment"));
+    }
+  };
+  public getPaymentStatus = async (
+    req: AuthenticationRequest,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const userId = req.user?.id;
+
+      if (!userId) {
+        throw createHttpError(401, "Unauthorized");
+      }
+
+      // ✅ Get all payments for the user
+      const payments = await prismaService.payment.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" }, // Most recent first
+      });
+
+      if (!payments || payments.length === 0) {
+        throw createHttpError(404, "No payments found");
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Payment status retrieved successfully",
+        data: payments.map((payment) => ({
+          id: payment.id,
+          status: payment.status,
+          reference: payment.reference,
+          amount: payment.amount,
+          paidAt: payment.paidAt,
+          channel: payment.channel,
+          currency: payment.currency,
+          subscriptionType: payment.subscriptionType,
+          createdAt: payment.createdAt,
+          authorization_code: payment.authorization_code,
+        })),
+      });
+    } catch (error) {
+      next(createHttpError(500, "Could not retrieve payment status"));
     }
   };
 }

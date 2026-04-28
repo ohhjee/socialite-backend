@@ -74,3 +74,32 @@ export const userAuthenticationMiddleware = async (
     });
   }
 };
+
+export const authenticateToken = async (token: string) => {
+  const decoded = verifyJWT<DecodedToken>(token);
+
+  if (!decoded?.id) {
+    throw new Error("Invalid authentication token format");
+  }
+
+  const isBlacklisted = await redisService.isTokenBlacklist(
+    decoded.id.toString(),
+  );
+  if (isBlacklisted) {
+    throw new Error("Token has been revoked");
+  }
+
+  let user = await redisService.getCachedUser(decoded.id);
+  if (!user) {
+    user = await prismaService.user.findFirst({
+      where: { id: decoded.id },
+    });
+    if (user) await redisService.cacheUser(decoded.id, user, 900);
+  }
+
+  if (!user) {
+    throw new Error("Invalid authentication token");
+  }
+
+  return { user, decoded };
+};
