@@ -6,7 +6,11 @@ import { Router } from "express";
 
 const router = Router();
 export function ChatRouter(): Router {
-  router.post("/conversations", chatController.getOrCreateConversation);
+  // routes/chat.route.ts
+  router.get("/:ref/conversations", chatController.getConversations);
+  router.post("/:ref/conversation", chatController.getOrCreateConversation);
+  router.post("/send", chatController.sendMessage);
+  router.get("/:conversationId/messages", chatController.getMessages);
 
   return router;
 }

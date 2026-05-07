@@ -7,22 +7,32 @@ import type {
 import { socketAuthMiddleware } from "@/middleware/socket.middleware";
 import { chatHandler } from "./chat.handler";
 import { log } from "console";
+import { _FRONTEND_URL_ } from "@/constant";
 
 export type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 let io: TypedServer;
 
+export const getReceiverSocketId = (ref: number) => {
+  return userSocketMap[ref];
+};
+const userSocketMap: Record<number, string> = {};
+
 export const initSocket = (httpServer: HttpServer): TypedServer => {
   io = new Server(httpServer, {
     cors: {
-      origin: "*",
+      origin: [_FRONTEND_URL_],
       methods: ["GET", "POST", "PUT", "DELETE"],
       credentials: true,
     },
   });
   io.use(socketAuthMiddleware);
+
   io.on("connection", (socket) => {
-    log(socket.handshake.auth.userId);
-    console.log(`Socket connected: ${socket.id} | User: ${socket.data}`);
+    // const userId = socket.data;
+    // log(socket.handshake.auth.userId);
+    console.log(
+      `Socket connected: ${socket.id} | User: ${socket.data.user.ref}`,
+    );
     chatHandler(io, socket);
 
     socket.on("disconnect", () => {
