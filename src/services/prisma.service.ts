@@ -5,7 +5,7 @@ class PrismaService extends PrismaClient {
   constructor() {
     super({
       log:
-        process.env.NODE_ENV === "development"
+        process.env.NODE_ENV === "Production"
           ? ["query", "info", "warn", "error"]
           : undefined,
     });

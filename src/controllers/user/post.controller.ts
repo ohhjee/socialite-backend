@@ -27,14 +27,14 @@ class PostController {
         return res.status(400).json({ message: "Title is required" });
       }
       const userGroup = await prismaService.userGroup.findFirst({
-        where: { userId: user.id },
+        where: { userId: user?.id },
       });
       if (!userGroup) {
         return res.status(403).json({ message: "You are not in any group" });
       }
       const newPost = await prismaService.groupPost.create({
         // data: { message: title, userId: user.id },
-        data: { message: title, userId: user.id, groupId: groupId },
+        data: { message: title, userId: user?.id, groupId: groupId },
       });
       // if (userGroup) {
       //   await prismaService.groupPost.create({
@@ -74,20 +74,22 @@ class PostController {
           },
         },
       });
-      const getCachedPost = redisService.getCachedPosts(`all_posts_${user.id}`);
+      const getCachedPost = redisService.getCachedPosts(
+        `all_posts_${user?.id}`,
+      );
       const postsWithMeta = posts.map((post) => ({
         ...post,
-        isLiked: post.likes.some((like) => like.userId === user.id),
+        isLiked: post.likes.some((like) => like.userId === user?.id),
         likes: post.likes.length,
         isBookmarked: post.bookmarks.some(
-          (bookmark) => bookmark.userId === user.id,
+          (bookmark) => bookmark.userId === user?.id,
         ),
         bookmarks: post.bookmarks.length,
         comments: post.comments.length,
       }));
 
       if (!getCachedPost) {
-        redisService.CachedPosts(`all_posts_${user.id}`, posts);
+        redisService.CachedPosts(`all_posts_${user?.id}`, posts);
       }
       res.json({ message: "Posts fetched successfully", data: postsWithMeta });
       // res.json({ message: "Posts fetched successfully", data: posts });
@@ -104,12 +106,12 @@ class PostController {
     try {
       const user = req.user;
       const posts = await prismaService.post.findMany({
-        where: { userId: user.id },
+        where: { userId: user?.id },
       });
-      const getCachedPost = redisService.getCachedPosts(`my_posts_${user.id}`);
+      const getCachedPost = redisService.getCachedPosts(`my_posts_${user?.id}`);
 
       if (!getCachedPost) {
-        redisService.CachedPosts(`my_posts_${user.id}`, posts);
+        redisService.CachedPosts(`my_posts_${user?.id}`, posts);
       }
       res.json({ message: "Posts fetched successfully", data: posts });
     } catch (error) {
@@ -174,7 +176,7 @@ class PostController {
             .toLowerCase();
           //  });
 
-          const fileName = `${user.ref}-${Date.now()}-${cleanFileName}`;
+          const fileName = `${user?.ref}-${Date.now()}-${cleanFileName}`;
 
           const key = `post/${fileName}`;
 
@@ -207,7 +209,7 @@ class PostController {
         },
       });
       logger.info(
-        `post ticket-id: ${TicketIdGenerator.generateTicketId()}, postId: ${newPost.id}, postTitle: ${newPost.title},userId: ${user.id}`,
+        `post ticket-id: ${TicketIdGenerator.generateTicketId()}, postId: ${newPost.id}, postTitle: ${newPost.title},userId: ${user?.id}`,
       );
       res.json({ message: "Post created successfully", data: newPost });
     } catch (error) {
