@@ -1,4 +1,5 @@
 import { verifyJWT } from "@/core";
+import { User } from "@/generated/prisma";
 import { prismaService } from "@/services/prisma.service";
 import { redisService } from "@/services/redis.service";
 import { NextFunction, Request, Response } from "express";
@@ -57,7 +58,7 @@ export const userAuthenticationMiddleware = async (
     }
 
     if (user) {
-      (req as AuthenticationRequest).user = user;
+      (req as AuthenticationRequest).user = user as User;
 
       next();
       return;

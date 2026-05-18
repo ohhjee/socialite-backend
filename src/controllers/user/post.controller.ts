@@ -267,7 +267,7 @@ class PostController {
       const groupPost = await prismaService.groupPost.findFirst({
         where: {
           groupId: Number(groupId),
-          postId: Number(postId),
+          // postId: Number(postId),
         },
         include: { group: true },
       });
@@ -295,31 +295,31 @@ class PostController {
     }
   };
 
-  public getPostsByGroupId = async (
-    req: AuthenticationRequest,
-    res: Response,
-    next: NextFunction,
-  ) => {
-    try {
-      const { groupId } = req.params;
-      //   log(id);
-      const id = Number(groupId);
-      const group = await prismaService.group.findUnique({
-        where: { id },
-      });
-      if (!group) {
-        return res.status(404).json({ message: "Group not found" });
-      }
+  // public getPostsByGroupId = async (
+  //   req: AuthenticationRequest,
+  //   res: Response,
+  //   next: NextFunction,
+  // ) => {
+  //   try {
+  //     const { groupId } = req.params;
+  //     //   log(id);
+  //     const id = Number(groupId);
+  //     const group = await prismaService.group.findUnique({
+  //       where: { id },
+  //     });
+  //     if (!group) {
+  //       return res.status(404).json({ message: "Group not found" });
+  //     }
 
-      const posts = await prismaService.groupPost.findMany({
-        where: { id },
-        include: { post: true, group: { include: { admin: true } } },
-      });
-      res.json({ message: "Posts fetched successfully", data: posts });
-    } catch (error) {
-      next(error);
-    }
-  };
+  //     const posts = await prismaService.groupPost.findMany({
+  //       where: { id },
+  //       include: { post: true, group: { include: { admin: true } } },
+  //     });
+  //     res.json({ message: "Posts fetched successfully nice", data: posts });
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // };
 }
 const postController = new PostController();
 export { postController };

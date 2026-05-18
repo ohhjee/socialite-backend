@@ -16,8 +16,8 @@ export function Post(): Router {
   router
     .get("/all-post", postController.getAllPosts)
     .get("/my-post", postController.getMyPosts)
-    .get("/:userId", postController.getPostsByUserId)
-    .get("/group/:groupId", postController.getPostsByGroupId);
+    .get("/:userId", postController.getPostsByUserId);
+  // .get("/group/:groupId", postController.getPostsByGroupId);
 
   router
     .post("/create", uploadPost, postController.createPost)

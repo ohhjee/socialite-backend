@@ -40,3 +40,19 @@ export async function sendVerificationEmail(
     },
   });
 }
+export async function sendWelcomeEmail(
+  email: string,
+  firstName: string,
+  lastName: string,
+) {
+  await addMailJob({
+    to: email,
+    subject: "Welcome to Socialite",
+    template: "welcomeMail.html",
+    replacements: {
+      firstName,
+      lastName,
+      app_name: process.env.APP_NAME || "My App",
+    },
+  });
+}

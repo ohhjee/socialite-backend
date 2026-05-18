@@ -10,7 +10,7 @@ class RedisService {
   constructor() {
     this.client = new Redis({
       host: redisHost,
-      port: parseInt(redisPort || "6379"),
+      port: redisPort,
       retryStrategy(times: number) {
         const delay = Math.min(times * 50, 2000);
         return delay;

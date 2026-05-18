@@ -4,6 +4,7 @@ import { generateToken } from "@/core/util";
 import {
   sendNewPasswordEmail,
   sendResetPasswordEmail,
+  sendWelcomeEmail,
 } from "@/services/auth.service";
 import { prismaService } from "@/services/prisma.service";
 import { userService } from "@/services/user.service";
@@ -86,6 +87,11 @@ class UserAuthentication {
           token,
         },
       });
+      await sendWelcomeEmail(
+        newUser.email,
+        newUser.firstName,
+        newUser.lastName,
+      );
     } catch (error) {
       next(error);
     }

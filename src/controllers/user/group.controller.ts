@@ -44,7 +44,7 @@ class GroupController {
       const userGroup = await prismaService.group.findFirst({
         where: { id: newGroup.id },
         include: {
-          joinedGroups: { include: { user: true, group: true } },
+          joinedGroups: { include: { user: true, groups: true } },
         },
       });
       await prismaService.userGroup.create({
