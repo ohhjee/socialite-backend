@@ -1,6 +1,6 @@
 import type { Request } from "express";
 import type { z } from "zod";
-import type { Admin, User } from "@/generated/prisma/client";
+import type { Admin, Post, User } from "@/generated/prisma/client";
 
 declare global {
   namespace Express {
@@ -20,5 +20,6 @@ declare global {
     admin: SUPERADMIN;
     // vendor: Vendor;
     user: User;
+    post?: Post;
   }
 }
