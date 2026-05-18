@@ -10,13 +10,15 @@ export function UserDashboard(): Router {
     .get("/:ref/profile", dashboardController.getProfile)
     .get("/:ref/me", dashboardController.me)
     .put("/:ref/profile", dashboardController.updateProfile)
+    .post("/:email/send-mail", dashboardController.sendVerifyEmail)
     .put(
       "/:ref/avatar",
       // upload.single("avatar"),
       uploadAvatar,
       // express.static(path.join(__dirname, "../uploads")),
       dashboardController.uploadAvatar,
-    );
+    )
+    .post("/verify-email", dashboardController.verifyEmailAddress);
 
   return route;
 }

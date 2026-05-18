@@ -5,6 +5,7 @@ import express, {
 } from "express";
 // import { apiV1Routes } from "./api/v1";
 import { apiV1Routes } from "./api/v1";
+import { serverAdapter } from "@/queues/bullBoard";
 export function registeredRoutes(): express.Router {
   const route = express.Router();
   route.get("/", (_: Request, res: Response) => {
@@ -12,6 +13,8 @@ export function registeredRoutes(): express.Router {
   });
 
   route.use("/api/v1", express.static("public/uploads"), apiV1Routes());
+  serverAdapter.setBasePath("/admin/queues");
+  route.use("/admin/queues", serverAdapter.getRouter());
   //   route.use("/health", async (_: Request, res: Response) => {
   //     try {
   //       const dbHealth = await prismaService.healthCheck();

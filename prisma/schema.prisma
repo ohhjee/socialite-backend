@@ -40,42 +40,68 @@ model Group {
 }
 
 model Post {
+  id         Int         @id @default(autoincrement())
+  ref        String      @unique @default(uuid())
+  title      String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     Int
+  admin      Admin?      @relation(fields: [adminId], references: [id])
+  adminId    Int?
+  likes      Like[]
+  bookmarks  Bookmark[]
+  postImages PostImage[]
+  comments   Comment[]
+}
+
+model PostImage {
+  id        Int      @id @default(autoincrement())
+  imageUrl  String
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Comment {
   id        Int      @id @default(autoincrement())
   ref       String   @unique @default(uuid())
-  title     String
-  completed Boolean  @default(false)
+  content   String
+  postId    Int
+  userId    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    Int
-  admin     Admin?   @relation(fields: [adminId], references: [id])
-  adminId   Int?
-
-  likes Like[]
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  ref       String   @unique @default(uuid())
-  firstName String
-  lastName  String
-  email     String   @unique
-  userName  String   @unique
-  password  String
-  createdAt DateTime @default(now())
-  avatarSrc String?
-  updatedAt DateTime @updatedAt
-  bio       String?
-
-  posts         Post[]
-  payments      Payment?
-  userGroups    UserGroup[]
-  joinedGroups  joinedGroup[]
-  groups        Group[]
-  groupPosts    GroupPost[]
-  likes         Like[]
-  conversations ConversationMember[]
-  sentMessages  Message[]            @relation("SentMessages")
+  id                        Int                  @id @default(autoincrement())
+  ref                       String               @unique @default(uuid())
+  firstName                 String
+  lastName                  String
+  email                     String               @unique
+  userName                  String               @unique
+  password                  String
+  createdAt                 DateTime             @default(now())
+  avatarSrc                 String?
+  updatedAt                 DateTime             @updatedAt
+  bio                       String?
+  is_verified               Boolean?
+  verified_at               DateTime?
+  verification_token        String?
+  verification_token_expiry DateTime?
+  posts                     Post[]
+  payments                  Payment?
+  userGroups                UserGroup[]
+  joinedGroups              joinedGroup[]
+  groups                    Group[]
+  groupPosts                GroupPost[]
+  likes                     Like[]
+  conversations             ConversationMember[]
+  sentMessages              Message[]            @relation("SentMessages")
+  bookmarks                 Bookmark[]
+  comments                  Comment[]
 }
 
 model UserGroup {
@@ -100,6 +126,19 @@ model Like {
   deletedAt DateTime?
 
   @@map("post_likes")
+}
+
+model Bookmark {
+  id        Int       @id @default(autoincrement())
+  ref       String    @unique @default(uuid())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  post      Post      @relation(fields: [post_Id], references: [id], onDelete: Cascade)
+  post_Id   Int
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@map("post_bookmark")
 }
 
 model GroupPost {
@@ -155,6 +194,14 @@ model Admin {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   posts     Post[]
+}
+
+model PasswordToken {
+  id        Int      @id @default(autoincrement())
+  token     String
+  email     String   @unique
+  createdAt DateTime @default(now())
+  expiredAt DateTime
 }
 
 model Conversation {

@@ -1,8 +1,11 @@
+import { s3Client } from "@/config/cloudflare.r2.config";
+import { R2_BUCKET_NAME, R2_PUBLIC_URL } from "@/constant";
 import { initWinstonLogger } from "@/core";
 import { TicketIdGenerator } from "@/core/ticketGenerator";
 import { canDelete } from "@/policy/canDelete";
 import { prismaService } from "@/services/prisma.service";
 import { redisService } from "@/services/redis.service";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { type NextFunction, type Response } from "express";
 import createHttpError from "http-errors";
 import { log } from "node:console";
@@ -64,6 +67,11 @@ class PostController {
         include: {
           user: { omit: { password: true } },
           likes: { where: { deletedAt: null } },
+          bookmarks: { where: { deletedAt: null } },
+          postImages: true,
+          comments: {
+            include: { user: { omit: { password: true } } },
+          },
         },
       });
       const getCachedPost = redisService.getCachedPosts(`all_posts_${user.id}`);
@@ -71,6 +79,11 @@ class PostController {
         ...post,
         isLiked: post.likes.some((like) => like.userId === user.id),
         likes: post.likes.length,
+        isBookmarked: post.bookmarks.some(
+          (bookmark) => bookmark.userId === user.id,
+        ),
+        bookmarks: post.bookmarks.length,
+        comments: post.comments.length,
       }));
 
       if (!getCachedPost) {
@@ -140,13 +153,58 @@ class PostController {
   ) => {
     try {
       const user = req.user;
+      const file = req.files as Express.Multer.File[];
       const { title } = req.body;
-
+      if (!file || file.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "No files uploaded",
+        });
+      }
       if (!title) {
         return res.status(400).json({ message: "Title is required" });
       }
+
+      const uploadUrls = await Promise.all(
+        file.map(async (file, index) => {
+          //  const cleanFileName = file?.map((files) => {
+          const cleanFileName = file.originalname
+            .replace(/\s+/g, "-") // replace spaces
+            .replace(/[()]/g, "") // remove brackets
+            .toLowerCase();
+          //  });
+
+          const fileName = `${user.ref}-${Date.now()}-${cleanFileName}`;
+
+          const key = `post/${fileName}`;
+
+          const fileUrl = `${R2_PUBLIC_URL}/${key}`;
+
+          await s3Client.send(
+            new PutObjectCommand({
+              Bucket: R2_BUCKET_NAME,
+              Key: key,
+              Body: file?.buffer,
+              ContentType: file?.mimetype,
+            }),
+          );
+          return fileUrl;
+        }),
+      );
+
       const newPost = await prismaService.post.create({
-        data: { title, userId: user.id },
+        data: {
+          title,
+          userId: user.id,
+          postImages: {
+            create: uploadUrls.map((url) => ({
+              imageUrl: url,
+            })),
+          },
+        },
+        include: {
+          postImages: true,
+        },
       });
       logger.info(
         `post ticket-id: ${TicketIdGenerator.generateTicketId()}, postId: ${newPost.id}, postTitle: ${newPost.title},userId: ${user.id}`,

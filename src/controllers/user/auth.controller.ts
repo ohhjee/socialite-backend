@@ -1,8 +1,13 @@
 import { ROLE_PERMISSIONS } from "@/config/permission";
 import { hashPassword, verifyHash } from "@/core";
 import { generateToken } from "@/core/util";
+import {
+  sendNewPasswordEmail,
+  sendResetPasswordEmail,
+} from "@/services/auth.service";
 import { prismaService } from "@/services/prisma.service";
 import { userService } from "@/services/user.service";
+import { generateResetCode } from "@/util/resetCode";
 import express, {
   type NextFunction,
   type Request,
@@ -51,9 +56,6 @@ class UserAuthentication {
           email,
         },
       });
-      // const roles = await prismaService.role.findUnique({
-      //   where: { id: 4 },
-      // });
 
       if (existingEmail)
         throw new createHttpError.Conflict("email already exists");
@@ -83,6 +85,156 @@ class UserAuthentication {
           user,
           token,
         },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+  public verifyEmail = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const { email } = req.body;
+
+      const validEmail = await prismaService.user.findUnique({
+        where: { email },
+      });
+
+      if (!validEmail) {
+        throw new createHttpError.Conflict("Email does not exist");
+      }
+
+      const existing = await prismaService.passwordToken.findUnique({
+        where: { email },
+      });
+
+      // ✅ If token exists and is still valid → reuse it
+      if (existing && existing.expiredAt > new Date()) {
+        // ⚠️ IMPORTANT: You cannot recover original token from hash
+        // So either:
+        // 1. Don’t resend email
+        // OR
+        // 2. Store plain token (better for OTP systems)
+
+        return res.json({
+          message: "Token already sent. Check your email.",
+        });
+      }
+
+      // ✅ Generate new token
+      const resetToken = generateResetCode();
+      const hashedToken = await hashPassword(resetToken);
+      const expiredAt = new Date(Date.now() + 15 * 60 * 1000);
+
+      // ✅ Save FIRST
+      await prismaService.passwordToken.upsert({
+        where: { email },
+        update: {
+          token: hashedToken,
+          expiredAt,
+        },
+        create: {
+          email,
+          token: hashedToken,
+          expiredAt,
+        },
+      });
+
+      // ✅ THEN send email
+      await sendResetPasswordEmail(email, resetToken);
+
+      res.json({
+        message: "Token sent to your mail",
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+  public verifyToken = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const { token, email } = req.body;
+
+      if (!token) {
+        throw new createHttpError.BadRequest("Token is required");
+      }
+
+      if (!email) {
+        throw new createHttpError.BadRequest("Email is required");
+      }
+
+      const tokenStr = String(token).trim();
+
+      const validToken = await prismaService.passwordToken.findUnique({
+        where: { email },
+      });
+
+      if (!validToken) {
+        throw new createHttpError.BadRequest("Invalid token");
+      }
+
+      const isMatch = await verifyHash(tokenStr, validToken.token);
+
+      if (!isMatch || validToken.expiredAt < new Date()) {
+        throw new createHttpError.BadRequest(
+          "Invalid token or token has expired",
+        );
+      }
+
+      // await prismaService.passwordToken.delete({
+      //   where: { email },
+      // });
+
+      res.json({
+        message: "Token verified",
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+  public updatePassword = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const { token, email, newPassword } = req.body;
+      if (!newPassword) {
+        throw new createHttpError.BadRequest("New password is required");
+      }
+      const getUserToken = await prismaService.passwordToken.findUnique({
+        where: { email },
+      });
+
+      if (!getUserToken) {
+        throw new createHttpError.BadRequest("Invalid token");
+      }
+      const isMatch = await verifyHash(token, getUserToken.token);
+      if (!isMatch) {
+        throw new createHttpError.BadRequest("Invalid token");
+      }
+
+      const hashedPassword = await hashPassword(newPassword);
+      const updatedPassword = await prismaService.user.update({
+        where: { email },
+        data: {
+          password: hashedPassword,
+        },
+      });
+      if (updatedPassword) {
+        await prismaService.passwordToken.delete({
+          where: { email },
+        });
+      }
+
+      await sendNewPasswordEmail(email, updatedPassword.userName);
+      res.status(200).json({
+        message: "Password updated, returning to login page",
       });
     } catch (error) {
       next(error);

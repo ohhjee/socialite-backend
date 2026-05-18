@@ -11,7 +11,7 @@ import { prismaService } from "@/services/prisma.service";
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 
-const onlineUsers = new Map<number, string>(); // userId → socket.id
+const onlineUsers = new Map<number, string>();
 
 export const chatHandler = (io: TypedServer, socket: TypedSocket) => {
   const userId = socket.data.userId as number;
@@ -20,22 +20,18 @@ export const chatHandler = (io: TypedServer, socket: TypedSocket) => {
 
   console.log(`User ${userId} connected → Socket ID: ${socket.id}`);
 
-  // ====================== ONLINE STATUS ======================
-
-  // ====================== ONLINE STATUS ======================
   const markOnline = () => {
     onlineUsers.set(userId, socket.id);
     io.emit("user:status", { userId, isOnline: true });
-    console.log(`✅ User ${userId} ONLINE | Total: ${onlineUsers.size}`);
+    console.log(` User ${userId} ONLINE | Total: ${onlineUsers.size}`);
   };
 
   const markOffline = () => {
     onlineUsers.delete(userId);
     io.emit("user:status", { userId, isOnline: false });
-    console.log(`❌ User ${userId} OFFLINE | Remaining: ${onlineUsers.size}`);
+    console.log(` User ${userId} OFFLINE | Remaining: ${onlineUsers.size}`);
   };
 
-  // Mark as online
   markOnline();
 
   // Handle disconnect properly
@@ -112,7 +108,6 @@ export const chatHandler = (io: TypedServer, socket: TypedSocket) => {
           include: { sender: true },
         });
 
-        // Broadcast to everyone in the room (including sender)
         io.to(room).emit("message:new", message);
 
         console.log(`Message sent in room ${room} by user ${userId}`);
@@ -125,7 +120,6 @@ export const chatHandler = (io: TypedServer, socket: TypedSocket) => {
     },
   );
 
-  // ====================== TYPING ======================
   socket.on(
     "typing:start",
     ({ conversationId }: { conversationId: string | number }) => {
