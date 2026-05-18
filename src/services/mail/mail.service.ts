@@ -12,18 +12,26 @@ export const sendEmailTemplate = async (
 ) => {
   try {
     const filePath = path.join(__dirname, "templates", templateName);
+
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Template not found: ${filePath}`);
+    }
+
     let html = fs.readFileSync(filePath, "utf-8");
     for (const key in replacements) {
       html = html.replace(new RegExp(`{{${key}}}`, "g"), replacements[key]);
     }
 
-    await transporter.sendMail({
+    const result = await transporter.sendMail({
       from: emailUser,
       to,
       subject,
       html,
     });
+
+    console.log(`✉️ Email sent successfully to ${to}:`, result.messageId);
   } catch (error) {
-    log(error);
+    console.error(`❌ Failed to send email to ${to}:`, error);
+    throw error; // Re-throw so BullMQ knows this job failed
   }
 };

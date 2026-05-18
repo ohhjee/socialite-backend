@@ -17,6 +17,7 @@ import {
 import path from "path";
 import { initSocket } from "./socket";
 import { limiter } from "./util/rate-limit";
+import { worker as mailWorker } from "./queues/workers/mail.worker";
 const port = process.env.PORT || 3000;
 
 export class App {
@@ -28,6 +29,10 @@ export class App {
 
     await prismaService.onModuleInit();
     await redisService.waitForReady();
+
+    console.log("✅ Mail worker started and listening for jobs");
+    console.log("Worker status:", mailWorker.isRunning());
+
     initSocket(this.httpServer);
     this.setupMiddlewares();
     this.setupRoutes();

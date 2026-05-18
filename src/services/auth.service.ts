@@ -1,16 +1,26 @@
-import { sendEmailTemplate } from "./mail/mail.service";
+import { addMailJob } from "@/queues/mail.queue";
 
 export async function sendResetPasswordEmail(email: string, code: string) {
-  await sendEmailTemplate(email, "Reset your password", "resetPassword.html", {
-    CODE: code,
-    app_name: process.env.APP_NAME || "My App",
+  await addMailJob({
+    to: email,
+    subject: "Reset your password",
+    template: "resetPassword.html",
+    replacements: {
+      CODE: code,
+      app_name: process.env.APP_NAME || "My App",
+    },
   });
 }
 
 export async function sendNewPasswordEmail(email: string, username: string) {
-  await sendEmailTemplate(email, "Password updated", "newPasswordNotice.html", {
-    username,
-    app_name: process.env.APP_NAME || "My App",
+  await addMailJob({
+    to: email,
+    subject: "Password updated",
+    template: "newPasswordNotice.html",
+    replacements: {
+      username,
+      app_name: process.env.APP_NAME || "My App",
+    },
   });
 }
 
@@ -19,9 +29,14 @@ export async function sendVerificationEmail(
   url: string,
   username: string,
 ) {
-  await sendEmailTemplate(email, "Verify your email", "verifyEmail.html", {
-    url,
-    username,
-    app_name: process.env.APP_NAME || "My App",
+  await addMailJob({
+    to: email,
+    subject: "Verify your email",
+    template: "verifyEmail.html",
+    replacements: {
+      url,
+      username,
+      app_name: process.env.APP_NAME || "My App",
+    },
   });
 }

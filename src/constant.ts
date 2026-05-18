@@ -8,7 +8,7 @@ export const { BCRYPT_SALT_ROUNDS, JWT_SECRET, JWT_EXPIRES_IN } =
   process.env as Record<string, string>;
 export const app_name = process.env.APP_NAME;
 // Redis Credentials
-export const redisPort = Number(process.env.Redis_Port) || 6379;
+export const redisPort = Number(process.env.Redis_Port) || Number(6379);
 export const redisHost = process.env.Redis_Host || "localhost";
 // Paystack Credentials
 export const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY || "";
