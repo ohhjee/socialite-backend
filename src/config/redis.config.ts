@@ -6,11 +6,11 @@ export const redisConfig: RedisOptions = redisUrl
       host: new URL(redisUrl).hostname,
       port: Number(new URL(redisUrl).port),
       password: new URL(redisUrl).password,
-      tls: {
-        rejectUnauthorized: false,
-      },
+      tls: { rejectUnauthorized: false },
+      maxRetriesPerRequest: null,
     }
   : {
       host: redisHost,
       port: redisPort,
+      maxRetriesPerRequest: null,
     };

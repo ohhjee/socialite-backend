@@ -13,7 +13,7 @@ class RedisService {
         const delay = Math.min(times * 50, 2000);
         return delay;
       },
-      maxRetriesPerRequest: 3,
+      maxRetriesPerRequest: null,
       enableOfflineQueue: true,
       connectTimeout: 10000,
       keepAlive: 30000,
