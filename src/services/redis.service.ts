@@ -29,13 +29,14 @@ class RedisService {
   private setupEventListener(): void {
     this.client.on("connect", () => {
       logger.info("Redis: Connection established");
+      this.isConnected = true;
     });
     this.client.on("ready", () => {
       logger.info("Redis: Ready to use");
       this.isConnected = true;
     });
     this.client.on("error", (error) => {
-      logger.error("Redis Error: ", error.message);
+      logger.error(`Redis Error: ${error.message} `);
       this.isConnected = false;
     });
     this.client.on("close", () => {
@@ -51,18 +52,21 @@ class RedisService {
     });
   }
   public async waitForReady(): Promise<void> {
-    if (this.isConnected) {
-      return Promise.resolve();
-    }
+    if (this.isConnected) return Promise.resolve();
+
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        return reject(new Error("Redis connection timed out"));
+        reject(new Error("Redis connection timed out"));
       }, 10000);
-      this.client.once("ready", () => {
+
+      // listen for either ready or connect since readyCheck is disabled
+      const onReady = () => {
         clearTimeout(timeout);
         resolve();
-      });
+      };
 
+      this.client.once("ready", onReady);
+      this.client.once("connect", onReady);
       this.client.once("error", (error) => {
         clearTimeout(timeout);
         reject(error);
