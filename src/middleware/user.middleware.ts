@@ -1,5 +1,5 @@
 import { verifyJWT } from "@/core";
-import { User } from "@/generated/prisma";
+import { User } from "@prisma/client";
 import { prismaService } from "@/services/prisma.service";
 import { redisService } from "@/services/redis.service";
 import { NextFunction, Request, Response } from "express";
