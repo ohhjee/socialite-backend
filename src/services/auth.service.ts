@@ -29,6 +29,7 @@ export async function sendVerificationEmail(
   url: string,
   username: string,
 ) {
+  console.log("📧 Queuing verification email:", { email, url, username });
   await addMailJob({
     to: email,
     subject: "Verify your email",
