@@ -1,4 +1,4 @@
-import { PrismaClient } from "@/generated/prisma";
+import { PrismaClient } from "@prisma/client";
 import { log } from "node:console";
 
 class PrismaService extends PrismaClient {
@@ -29,7 +29,7 @@ class PrismaService extends PrismaClient {
   }
 }
 
-const prismaService = new PrismaService();
+const prismaService: PrismaService = new PrismaService();
 
 export { prismaService };
 export type { PrismaService };

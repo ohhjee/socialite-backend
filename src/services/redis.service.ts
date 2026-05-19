@@ -1,6 +1,6 @@
 import { redisHost, redisPort } from "@/constant";
 import { initWinstonLogger } from "@/core";
-import { Post } from "@/generated/prisma";
+import { Post } from "@prisma/client";
 import Redis from "ioredis";
 const logger = initWinstonLogger("redis.log");
 class RedisService {
