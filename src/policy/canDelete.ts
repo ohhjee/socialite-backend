@@ -1,4 +1,4 @@
-import { Admin, Group, GroupPost, Post, User } from "@/generated/prisma";
+import { Admin, Group, GroupPost, Post, User } from "@prisma/client";
 import createHttpError from "http-errors";
 
 type DeletePermissionCheck = {

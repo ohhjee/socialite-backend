@@ -1,5 +1,5 @@
 // import { User } from './../generated/prisma/models/User';
-import { User } from "@/generated/prisma";
+import { User } from "@prisma/client";
 // import type { User } from "@prisma/client";
 
 class UserService {
