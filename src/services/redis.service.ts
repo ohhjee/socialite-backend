@@ -14,10 +14,9 @@ class RedisService {
         return delay;
       },
       maxRetriesPerRequest: null,
-      enableOfflineQueue: true,
+      enableOfflineQueue: false, // ← also change this to false
       connectTimeout: 10000,
-      keepAlive: 30000,
-      enableReadyCheck: true,
+      enableReadyCheck: false, // ← change this to false
       connectionName: "socialite-app",
     };
 
