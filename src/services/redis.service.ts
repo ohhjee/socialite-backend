@@ -1,4 +1,4 @@
-import { redisHost, redisPort } from "@/constant";
+import { redisHost, redisPort, redisUrl } from "@/constant";
 import { initWinstonLogger } from "@/core";
 import { Post } from "@prisma/client";
 import Redis from "ioredis";
@@ -8,9 +8,7 @@ class RedisService {
   private isConnected: boolean = false;
 
   constructor() {
-    this.client = new Redis({
-      host: redisHost,
-      port: redisPort,
+    const baseOptions = {
       retryStrategy(times: number) {
         const delay = Math.min(times * 50, 2000);
         return delay;
@@ -20,8 +18,13 @@ class RedisService {
       connectTimeout: 10000,
       keepAlive: 30000,
       enableReadyCheck: true,
-      connectionName: "todo-app",
-    });
+      connectionName: "socialite-app",
+    };
+
+    this.client = redisUrl
+      ? new Redis(redisUrl, baseOptions)
+      : new Redis({ host: redisHost, port: redisPort, ...baseOptions });
+
     this.setupEventListener();
   }
   private setupEventListener(): void {
