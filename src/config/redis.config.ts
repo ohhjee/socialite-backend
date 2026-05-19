@@ -6,7 +6,9 @@ export const redisConfig: RedisOptions = redisUrl
       host: new URL(redisUrl).hostname,
       port: Number(new URL(redisUrl).port),
       password: new URL(redisUrl).password,
-      tls: {},
+      tls: {
+        rejectUnauthorized: false,
+      },
     }
   : {
       host: redisHost,
