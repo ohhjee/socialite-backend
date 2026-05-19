@@ -1,7 +1,14 @@
-import { redisHost, redisPort } from "@/constant";
+import { redisUrl, redisHost, redisPort } from "@/constant";
 import { RedisOptions } from "bullmq";
 
-export const redisConfig: RedisOptions = {
-  host: redisHost,
-  port: redisPort,
-};
+export const redisConfig: RedisOptions = redisUrl
+  ? {
+      host: new URL(redisUrl).hostname,
+      port: Number(new URL(redisUrl).port),
+      password: new URL(redisUrl).password,
+      tls: {},
+    }
+  : {
+      host: redisHost,
+      port: redisPort,
+    };

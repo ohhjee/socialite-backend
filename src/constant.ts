@@ -10,6 +10,7 @@ export const app_name = process.env.APP_NAME;
 // Redis Credentials
 export const redisPort = Number(process.env.Redis_Port) || Number(6379);
 export const redisHost = process.env.Redis_Host || "localhost";
+export const redisUrl = process.env.Redis_URL || "";
 // Paystack Credentials
 export const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY || "";
 export const paystackBaseUrl = process.env.PAYSTACK_BASE_URL || "";
