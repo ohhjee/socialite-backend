@@ -1,9 +1,9 @@
 import { emailPass, emailUser } from "@/constant";
 import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
-import dns from'dns'
+import dns from "dns";
 
-dns.setDefaultResultOrder("ipv4first"); 
+dns.setDefaultResultOrder("ipv4first");
 
 const transportOptions: SMTPTransport.Options = {
   host: "smtp.gmail.com",
@@ -16,4 +16,4 @@ const transportOptions: SMTPTransport.Options = {
   },
 };
 
-export const transport = nodemailer.createTransport(transportOptions);
+export const transporter = nodemailer.createTransport(transportOptions);
