@@ -1,12 +1,19 @@
 import { emailPass, emailUser } from "@/constant";
 import nodemailer from "nodemailer";
+import SMTPTransport from "nodemailer/lib/smtp-transport";
+import dns from'dns'
 
-export const transporter = nodemailer.createTransport({
+dns.setDefaultResultOrder("ipv4first"); 
+
+const transportOptions: SMTPTransport.Options = {
   host: "smtp.gmail.com",
-  port: 587, // ✅ use this
-  secure: false, // ✅ MUST be false
+  port: 587,
+  secure: false,
+
   auth: {
     user: emailUser,
     pass: emailPass,
   },
-});
+};
+
+export const transport = nodemailer.createTransport(transportOptions);
