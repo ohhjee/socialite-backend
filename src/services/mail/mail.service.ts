@@ -36,7 +36,7 @@ export const sendEmailTemplate = async (
       html,
     });
 
-    console.log(`✉️ Email sent successfully to ${to}:`, result.data?.id);
+    console.log(`✉️ Email sent successfully to ${to}:`, result.data);
   } catch (error) {
     console.error(`❌ Failed to send email to ${to}:`, error);
     throw error; // Re-throw so BullMQ knows this job failed
