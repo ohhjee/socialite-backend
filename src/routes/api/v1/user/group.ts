@@ -13,17 +13,17 @@ export function Group(): Router {
     groupController.createGroup,
   );
   router.get(
-    "/:id",
+    "/:ref",
     userAuthenticationMiddleware,
     groupController.getGroupById,
   );
   router.post(
-    "/:id/join",
+    "/:ref/join",
     userAuthenticationMiddleware,
     groupController.joinGroup,
   );
   router.delete(
-    "/:id/leave",
+    "/:ref/leave",
     userAuthenticationMiddleware,
     groupController.leaveGroup,
   );

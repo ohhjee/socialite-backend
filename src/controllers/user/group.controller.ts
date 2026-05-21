@@ -88,17 +88,18 @@ class GroupController {
     next: NextFunction,
   ) => {
     try {
-      const { id } = req.params;
-      const groupId = parseInt(String(id));
+      const ref = req.params.ref as string;
+      // const groupId = ref;
+      log(ref);
       const findGroup = await prismaService.group.findUnique({
-        where: { id: groupId },
+        where: { ref },
       });
       if (!findGroup) {
         throw new createHttpError.NotFound("Group not found");
       }
 
       const group = await prismaService.group.findUnique({
-        where: { id: groupId },
+        where: { ref },
 
         include: {
           joinedGroups: { include: { user: { omit: { password: true } } } },
@@ -133,14 +134,14 @@ class GroupController {
   ) => {
     try {
       const user = req.user;
-      const { id } = req.params;
-      const groupId = parseInt(String(id));
-      if (!groupId) {
+      const ref = req.params.ref as string;
+      // const groupId = parseInt(String(id));
+      if (!ref) {
         throw new createHttpError.BadRequest("Invalid group ID");
       }
 
       const findGroup = await prismaService.group.findUnique({
-        where: { id: groupId },
+        where: { ref },
       });
       if (!findGroup) {
         throw new createHttpError.NotFound("Group not found");
@@ -148,7 +149,7 @@ class GroupController {
 
       const existingUserGroup = await prismaService.userGroup.findUnique({
         where: {
-          userId_groupId: { userId: user.id, groupId },
+          userId_groupId: { userId: user.id, groupId: findGroup.id },
         },
       });
 
@@ -159,14 +160,14 @@ class GroupController {
       const joinGroup = await prismaService.joinedGroup.create({
         data: {
           user: { connect: { id: user.id } },
-          groups: { connect: { id: groupId } },
+          groups: { connect: { ref } },
         },
       });
 
       await prismaService.userGroup.upsert({
-        where: { userId_groupId: { userId: user.id, groupId } },
+        where: { userId_groupId: { userId: user.id, groupId: findGroup.id } },
         update: {},
-        create: { userId: user.id, groupId },
+        create: { userId: user.id, groupId: findGroup.id },
       });
 
       res.status(StatusCodes.OK).json({
@@ -185,15 +186,15 @@ class GroupController {
   ) => {
     try {
       const user = req.user;
-      const { id } = req.params;
-      const groupId = parseInt(String(id));
+      const ref = req.params.ref as string;
+      // const groupId = parseInt(String(id));
 
-      if (!groupId) {
+      if (!ref) {
         throw new createHttpError.BadRequest("Invalid group ID");
       }
 
       const findGroup = await prismaService.group.findUnique({
-        where: { id: groupId },
+        where: { ref },
       });
       if (!findGroup) {
         throw new createHttpError.NotFound("Group not found");
@@ -201,10 +202,10 @@ class GroupController {
 
       // Check BOTH tables
       const existingUserGroup = await prismaService.userGroup.findUnique({
-        where: { userId_groupId: { userId: user.id, groupId } },
+        where: { userId_groupId: { userId: user.id, groupId: findGroup.id } },
       });
       const existingJoinedGroup = await prismaService.joinedGroup.findFirst({
-        where: { userId: user.id, groupId },
+        where: { userId: user.id, groupId: findGroup.id },
       });
 
       if (!existingUserGroup && !existingJoinedGroup) {
@@ -221,7 +222,7 @@ class GroupController {
       // Delete from userGroup using composite key
       if (existingUserGroup) {
         await prismaService.userGroup.delete({
-          where: { userId_groupId: { userId: user.id, groupId } },
+          where: { userId_groupId: { userId: user.id, groupId: findGroup.id } },
         });
       }
 
@@ -239,16 +240,15 @@ class GroupController {
     next: NextFunction,
   ) => {
     try {
-      const { id } = req.params;
-      const groupId = parseInt(String(id));
+      const ref = req.params.ref as string;
       const findGroup = await prismaService.group.findUnique({
-        where: { id: groupId },
+        where: { ref },
       });
       if (!findGroup) {
         throw new createHttpError.NotFound("Group not found");
       }
       const members = await prismaService.joinedGroup.findMany({
-        where: { groupId: groupId },
+        where: { ref },
         include: { user: true },
       });
       res.status(StatusCodes.OK).json({
