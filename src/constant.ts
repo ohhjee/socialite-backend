@@ -24,3 +24,6 @@ export const R2_SECRETACCESSKEY = process.env.R2_SECRETACCESSKEY || "";
 export const R2_URL = process.env.R2_URL || "";
 export const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || "";
 export const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || "";
+//Resend email
+
+export const Resend_Email = process.env.Resend_Email || "";

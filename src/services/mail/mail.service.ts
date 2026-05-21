@@ -1,4 +1,5 @@
 import { transporter } from "@/config/email";
+import { resend } from "@/config/resendEmail.config";
 import { emailUser } from "@/constant";
 import { log } from "console";
 import fs from "fs";
@@ -22,14 +23,20 @@ export const sendEmailTemplate = async (
       html = html.replace(new RegExp(`{{${key}}}`, "g"), replacements[key]);
     }
 
-    const result = await transporter.sendMail({
-      from: emailUser,
+    // const result = await transporter.sendMail({
+    //   from: emailUser,
+    //   to,
+    //   subject,
+    //   html,
+    // });
+    const result = await resend.emails.send({
+      from: "Socialite <onboarding@resend.dev>",
       to,
       subject,
       html,
     });
 
-    console.log(`✉️ Email sent successfully to ${to}:`, result.messageId);
+    console.log(`✉️ Email sent successfully to ${to}:`, result.data?.id);
   } catch (error) {
     console.error(`❌ Failed to send email to ${to}:`, error);
     throw error; // Re-throw so BullMQ knows this job failed
