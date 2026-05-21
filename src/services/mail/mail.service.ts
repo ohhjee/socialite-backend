@@ -30,7 +30,7 @@ export const sendEmailTemplate = async (
     //   html,
     // });
     const result = await resend.emails.send({
-      from: "Socialite <onboarding@resend.dev>",
+      from: "Socialite <noreply@socialite.website>",
       to,
       subject,
       html,
