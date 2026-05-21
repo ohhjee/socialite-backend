@@ -54,6 +54,7 @@ export async function sendWelcomeEmail(
       firstName,
       lastName,
       app_name: process.env.APP_NAME || "My App",
+      year: new Date().getFullYear(),
     },
   });
 }

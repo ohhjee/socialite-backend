@@ -11,7 +11,7 @@ export async function addMailJob(data: {
 }) {
   try {
     const job = await mailQueue.add("send-mail", data, {
-      delay: 0, // reduced delay to 1 second for testing
+      delay: 10000, // reduced delay to 1 second for testing
       attempts: 300,
       backoff: {
         type: "exponential",
