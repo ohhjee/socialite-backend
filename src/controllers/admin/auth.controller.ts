@@ -1,14 +1,16 @@
-import { verifyHash, generateToken } from "@/core";
+import { verifyHash, generateToken, hashPassword } from "@/core";
 import { prismaService } from "@/services/prisma.service";
 import { userService } from "@/services/user.service";
 import { type NextFunction, type Request, type Response } from "express";
 import createHttpError from "http-errors";
+import { log } from "node:console";
 
 class AdminAuthController {
   public login = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { email, password } = req.body;
 
+      log("Admin login attempt:", { email });
       const admin = await prismaService.admin.findFirst({
         where: {
           email,
@@ -32,6 +34,29 @@ class AdminAuthController {
           token,
         },
       });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // TODO:: create admin type later where you choose which admin you want to create e.g super admin, content moderator, support admin.
+
+  public createAdmin = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const { firstName, lastName, email, password } = req.body;
+      const admin = await prismaService.admin.create({
+        data: {
+          firstName,
+          lastName,
+          email,
+          password: await hashPassword(password),
+        },
+      });
+      res.json({ message: "Admin created successfully", data: admin });
     } catch (error) {
       next(error);
     }

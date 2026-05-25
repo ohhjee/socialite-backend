@@ -80,7 +80,7 @@ class UserAuthentication {
       });
       const token = generateToken(userService.extractUserDataForJWT(newUser));
       const { password: _, ...user } = newUser;
-      res.json({
+      res.status(200).json({
         message: "User created successfully",
         data: {
           user,

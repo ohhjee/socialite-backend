@@ -10,7 +10,7 @@ interface DecodedToken {
   role?: "user" | "admin";
 }
 
-export const authenticationMiddleware = async (
+export const adminAuthenticationMiddleware = async (
   req: Request,
   res: Response,
   next: NextFunction,

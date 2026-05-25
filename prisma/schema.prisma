@@ -91,6 +91,7 @@ model User {
   verified_at               DateTime?
   verification_token        String?
   verification_token_expiry DateTime?
+  softDelete                DateTime?
   posts                     Post[]
   payments                  Payment?
   userGroups                UserGroup[]

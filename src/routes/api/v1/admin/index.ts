@@ -1,15 +1,15 @@
+import { adminAuthenticationMiddleware } from "@/middleware/auth.middleware";
 import { Router } from "express";
 import { Auth } from "./auth";
-import { userAuthenticationMiddleware } from "@/middleware/user.middleware";
-import { Post } from "./post";
-import { authenticationMiddleware } from "@/middleware/auth.middleware";
+import { AdminDashboard } from "./dashboard";
+import { AdminPost } from "./adminPost";
 
 const route = Router();
 export function adminRouter(): Router {
   route.use("/auth", Auth());
 
-  //   route.use("/dashboard", userAuthenticationMiddleware, UserDashboard());
+  route.use("/dashboard", adminAuthenticationMiddleware, AdminDashboard());
   //   route.use("/group", userAuthenticationMiddleware, Group());
-  route.use("/post", authenticationMiddleware, Post());
+  route.use("/post", adminAuthenticationMiddleware, AdminPost());
   return route;
 }
