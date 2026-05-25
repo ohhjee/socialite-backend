@@ -16,7 +16,7 @@ import {
 } from "./core/filter/globalErrorHandler.filter";
 import path from "path";
 import { initSocket } from "./socket";
-import { limiter } from "./util/rate-limit";
+// import { limiter } from "./util/rate-limit";
 import { worker as mailWorker } from "./queues/workers/mail.worker";
 const port = process.env.PORT || 3000;
 
@@ -46,7 +46,7 @@ export class App {
     this.express.use(express.json());
     this.express.use(cors());
     this.express.use(express.urlencoded({ extended: true }));
-    this.express.use(limiter);
+    // this.express.use(limiter);
     this.express.use(
       "/uploads",
       express.static(path.join(process.cwd(), "public/uploads")),
