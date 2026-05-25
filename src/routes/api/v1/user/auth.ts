@@ -12,13 +12,13 @@ const route = Router();
 export function Auth(): Router {
   route.post(
     "/register",
-    authLimiter(5),
+    authLimiter(40000),
     validateBody(createUserSchema),
     userAuthentication.registerUser,
   );
   route.post(
     "/login",
-    authLimiter(5),
+    authLimiter(40000),
     validateBody(loginSchema),
     userAuthentication.login,
   );

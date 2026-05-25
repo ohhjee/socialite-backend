@@ -157,15 +157,15 @@ class PostController {
       const user = req.user;
       const file = req.files as Express.Multer.File[];
       const { title } = req.body;
-      if (!file || file.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: "No files uploaded",
-        });
-      }
-      if (!title) {
-        return res.status(400).json({ message: "Title is required" });
-      }
+      // if (!file || file.length === 0) {
+      //   return res.status(400).json({
+      //     success: false,
+      //     message: "No files uploaded",
+      //   });
+      // }
+      // if (!title) {
+      //   return res.status(400).json({ message: "Title is required" });
+      // }
 
       const uploadUrls = await Promise.all(
         file.map(async (file, index) => {
