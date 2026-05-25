@@ -42,7 +42,7 @@ class AdminPostController {
         include: {
           user: { omit: { password: true } },
           postImages: true,
-          like: true,
+          likes: true,
           bookmarks: true,
           comments: {
             include: {
