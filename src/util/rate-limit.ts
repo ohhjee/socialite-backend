@@ -1,10 +1,10 @@
 import { rateLimit } from "express-rate-limit";
 export const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 800,
+  limit: 8000000000000000000000000000000000000000000000000000000000000000000000,
   message: {
     status: 429,
-    message: "To many Requests, please try again later",
+    message: "Too many Requests, please try again later",
   },
 });
 export const authLimiter = (limit: number) => {
@@ -13,7 +13,7 @@ export const authLimiter = (limit: number) => {
     limit,
     message: {
       status: 429,
-      message: "To many Requests, please try again later",
+      message: "Too many Requests, please try again later",
     },
   });
 };
