@@ -1,12 +1,16 @@
 import { verifyJWT } from "@/core";
 import { prismaService } from "@/services/prisma.service";
 import { redisService } from "@/services/redis.service";
-import { NextFunction, Request, Response } from "express";
+import { Admin } from "@prisma/client";
+import {type NextFunction, Request, Response } from "express";
+import createHttpError from "http-errors";
 import { StatusCodes } from "http-status-codes";
+import { log } from "node:console";
 
 // Decoded token interface
 interface DecodedToken {
   id: number;
+  ref: string;
   role?: "user" | "admin";
 }
 
@@ -15,6 +19,7 @@ export const adminAuthenticationMiddleware = async (
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
+  log("Admin auth middleware triggered for:", req.path);
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -26,8 +31,11 @@ export const adminAuthenticationMiddleware = async (
 
     const token = authHeader.substring(7);
     const decoded = verifyJWT<DecodedToken>(token);
-
-    if (!decoded?.id) {
+    // console.log("Authorization:", req.headers.authorization);
+    // console.log("Admin:", req.admin);
+    log("Token decoded:", { decoded, hasRef: !!decoded?.ref });
+    if (!decoded?.ref) {
+      log("Decoded token missing ref:", { decoded });
       res.status(StatusCodes.UNAUTHORIZED).json({
         status: "error",
         message: "Invalid authentication token format",
@@ -36,9 +44,8 @@ export const adminAuthenticationMiddleware = async (
     }
 
     // Check if token is blacklisted
-    const isBlacklisted = await redisService.isTokenBlacklist(
-      decoded.id.toString(),
-    );
+    const isBlacklisted = await redisService.isTokenBlacklist(decoded.ref);
+    log("Token blacklist check:", { ref: decoded.ref, isBlacklisted });
     if (isBlacklisted) {
       res
         .status(StatusCodes.UNAUTHORIZED)
@@ -46,22 +53,35 @@ export const adminAuthenticationMiddleware = async (
       return;
     }
 
-    let admin = await redisService.getCachedAdmin(decoded.id);
+    let admin = await redisService.getCachedAdmin(decoded.ref);
+    log("Admin auth middleware - cached admin:", {
+      hasCachedAdmin: !!admin,
+      ref: decoded.ref,
+    });
     if (!admin) {
+      log("No cached admin, checking database for ref:", decoded.ref);
       admin = await prismaService.admin.findFirst({
-        where: { id: decoded.id },
+        where: { ref: decoded.ref },
       });
-      if (admin) await redisService.cacheAdmin(decoded.id, admin, 900);
+      // log("Database admin lookup:", {
+      //   found: !!admin,
+      //   adminId: admin?.id,
+      // });
+      if (admin) await redisService.cacheAdmin(decoded.ref, admin, 900);
     }
 
     if (admin) {
-      (req as AuthenticationRequest).admin = admin;
-      // (req as AuthenticationRequest).userType = "admin";
+      (req as AuthenticationRequest).admin = admin as Admin;
+      log("Middleware setting admin:", {
+        adminSet: !!req.admin,
+        adminRef: (req as AuthenticationRequest).admin?.ref,
+      });
       next();
       return;
     }
 
     // Neither admin nor user found
+    log("Admin not found in DB or cache");
     res
       .status(StatusCodes.UNAUTHORIZED)
       .json({ status: "error", message: "Invalid authentication token" });
@@ -73,4 +93,17 @@ export const adminAuthenticationMiddleware = async (
   }
 };
 
-export const requireRole = (role: string) => {};
+export const requireRole =
+  (...roles: string[]) =>
+  (req: AuthenticationRequest,res:Response, next: NextFunction) => {
+    log("roles:", roles);
+    const role = req.admin.role;
+    if (!role) {
+      throw new createHttpError.Unauthorized("Unauthorized access");
+    }
+    if (!roles.includes(role)) {
+      throw new createHttpError.Forbidden("Forbidden");
+    }
+
+    next();
+  };

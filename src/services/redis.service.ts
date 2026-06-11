@@ -116,7 +116,7 @@ class RedisService {
     }
   }
   public async cacheAdmin(
-    adminId: number,
+    adminId: number | string,
     adminData: unknown,
     tllSeconds: number = 900,
   ): Promise<boolean> {
@@ -147,12 +147,14 @@ class RedisService {
       return false;
     }
   }
-  public async getCachedAdmin(adminId: number): Promise<unknown | null> {
+  public async getCachedAdmin(
+    adminId: number | string,
+  ): Promise<unknown | null> {
     try {
       await this.waitForReady();
       const key = `Admin:${adminId}`;
       const result = await this.client.get(key);
-      return result;
+      return result ? JSON.parse(result) : null;
     } catch (error) {
       console.error("Error getting cached admin:", error);
       return null;
@@ -163,7 +165,7 @@ class RedisService {
       await this.waitForReady();
       const key = `User:${adminId}`;
       const result = await this.client.get(key);
-      return result;
+      return result ? JSON.parse(result) : null;
     } catch (error) {
       console.error("Error getting cached admin:", error);
       return null;
@@ -182,7 +184,7 @@ class RedisService {
   public async getCachedPosts(key: string): Promise<unknown | null> {
     try {
       const result = await this.client.get(key);
-      return result;
+      return result ? JSON.parse(result) : null;
     } catch (error) {
       console.error("Error getting cached admin:", error);
       return null;

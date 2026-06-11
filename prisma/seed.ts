@@ -2,7 +2,7 @@ import { hashPassword } from "./../src/core/libs/hash";
 // import { SUPERADMIN } from "@/generated/prisma/enums";
 // prisma/seed.ts
 
-import { PrismaClient } from "@prisma/client";
+import { AdminRole, PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -73,8 +73,8 @@ async function main() {
     firstName: "Admin",
     lastName: "Admin",
     email: "admin@admin.com",
+    role: AdminRole.superAdmin,
     password: hash,
-    // role: SUPERADMIN,
   };
 
   await prisma.admin.upsert({

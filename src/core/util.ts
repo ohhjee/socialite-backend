@@ -11,6 +11,10 @@ export const verifyJWT = <T>(token: string): T | null => {
   try {
     return jwt.verify(token, jwtSecret) as T;
   } catch (error) {
+    console.error(
+      "JWT verification error:",
+      error instanceof Error ? error.message : error,
+    );
     return null;
   }
 };

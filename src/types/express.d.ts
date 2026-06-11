@@ -5,7 +5,7 @@ import type { Admin, User } from "@prisma/client";
 declare global {
   namespace Express {
     interface Request {
-      admin: SUPERADMIN;
+      admin: Admin;
       //   vendor: Vendor;
       user: User;
     }
@@ -17,7 +17,7 @@ declare global {
   }
 
   interface AuthenticationRequest extends Request {
-    admin: SUPERADMIN;
+    admin: Admin;
     // vendor: Vendor;
     user: User;
   }

@@ -69,8 +69,7 @@ class GroupController {
       const allGroup = await prismaService.group.findMany({
         include: {
           joinedGroups: { include: { user: true } },
-          // joinedGroup: { include: { user: true } }, // ← consistent name
-          // joinedGroups: { include: { user: true } },
+       
           groupPosts: true,
         },
       });

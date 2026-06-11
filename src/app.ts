@@ -1,3 +1,4 @@
+import { outray } from '@outray/express';
 import { prismaService } from "@/services/prisma.service";
 import { log } from "console";
 import cors from "cors";
@@ -18,6 +19,7 @@ import path from "path";
 import { initSocket } from "./socket";
 // import { limiter } from "./util/rate-limit";
 import { worker as mailWorker } from "./queues/workers/mail.worker";
+import webhookRouter from "./routes/webhook.routes"
 const port = process.env.PORT || 3000;
 
 export class App {
@@ -28,7 +30,9 @@ export class App {
     this.httpServer = http.createServer(this.express);
 
     await prismaService.onModuleInit();
-    await redisService.waitForReady();
+
+    outray(this.express);
+    // await redisService.waitForReady();
 
     console.log("✅ Mail worker started and listening for jobs");
     console.log("Worker status:", mailWorker.isRunning());
@@ -43,6 +47,7 @@ export class App {
   }
 
   public async setupMiddlewares(): Promise<void> {
+    this.express.use("/webhook", express.raw({type:'application/json'}), webhookRouter)
     this.express.use(express.json());
     this.express.use(cors());
     this.express.use(express.urlencoded({ extended: true }));

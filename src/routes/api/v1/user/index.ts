@@ -7,6 +7,7 @@ import { Post } from "./post";
 import { paymentRoute } from "./payment";
 import { likeRoute } from "./like";
 import { ChatRouter } from "./chat";
+import { privacyRoute } from "./privacy";
 const route = Router();
 export function userRoutes(): Router {
   route.use("/auth", Auth());
@@ -16,6 +17,7 @@ export function userRoutes(): Router {
   route.use("/post", userAuthenticationMiddleware, Post());
   route.use("/payment", userAuthenticationMiddleware, paymentRoute());
   route.use("/chat", userAuthenticationMiddleware, ChatRouter());
+  route.use("/privacy", userAuthenticationMiddleware, privacyRoute());
   // route.use("/like", userAuthenticationMiddleware, likeRoute());
   return route;
 }

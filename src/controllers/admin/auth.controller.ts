@@ -1,6 +1,7 @@
-import { verifyHash, generateToken, hashPassword } from "@/core";
+import { generateToken, hashPassword, verifyHash } from "@/core";
+import { adminService } from "@/services/admin.service";
 import { prismaService } from "@/services/prisma.service";
-import { userService } from "@/services/user.service";
+import { AdminRole } from "@prisma/client";
 import { type NextFunction, type Request, type Response } from "express";
 import createHttpError from "http-errors";
 import { log } from "node:console";
@@ -23,14 +24,14 @@ class AdminAuthController {
         throw new createHttpError.Unauthorized("Invalid credentials");
 
       const token = generateToken(
-        userService.extractUserDataForJWT(admin as any),
+        adminService.extractUserDataForJWT(admin as any),
       );
 
       const { password: _, ...adminData } = admin;
       res.json({
         message: "Login successful",
         data: {
-          admin: adminData,
+          user: adminData,
           token,
         },
       });
@@ -47,13 +48,14 @@ class AdminAuthController {
     next: NextFunction,
   ) => {
     try {
-      const { firstName, lastName, email, password } = req.body;
+      const { firstName, lastName, email, password,role } = req.body;
       const admin = await prismaService.admin.create({
         data: {
           firstName,
           lastName,
           email,
           password: await hashPassword(password),
+          role
         },
       });
       res.json({ message: "Admin created successfully", data: admin });
@@ -61,6 +63,7 @@ class AdminAuthController {
       next(error);
     }
   };
+
 }
 export const adminAuthController = new AdminAuthController();
 export type { AdminAuthController };

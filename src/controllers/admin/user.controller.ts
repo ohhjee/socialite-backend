@@ -5,6 +5,32 @@ import createHttpError from "http-errors";
 import { log } from "node:console";
 
 class AdminUserController {
+  public getUser = async (
+    req: AuthenticationRequest,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    const admin = req.admin;
+    // log("Admin fetching their data:", { ref });
+    try {
+      log("Admin logged in:", admin);
+      log("Admin ref check:", { adminRef: admin?.ref, adminExists: !!admin });
+      if (!admin || !admin.ref) {
+        throw new createHttpError.Unauthorized("You are not logged in");
+      }
+      const user = await prismaService.admin.findUnique({
+        where: { ref: admin.ref },
+        omit: { password: true },
+      });
+      if (!user) throw new createHttpError.NotFound("Admin not found");
+      res.json({
+        message: "Admin fetched successfully",
+        data: { user },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
   public getUsers = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const users = await prismaService.user.findMany({

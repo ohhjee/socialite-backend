@@ -62,7 +62,7 @@ class UserAuthentication {
         throw new createHttpError.Conflict("email already exists");
       const existingUsername = await prismaService.user.findFirst({
         where: {
-          email,
+          userName,
         },
       });
       if (existingUsername)
@@ -78,6 +78,12 @@ class UserAuthentication {
           password: hashPwd,
         },
       });
+      await prismaService.subscription.create({
+        data:{
+          userId:newUser.id,
+          plan:'FREE',status:'ACTIVE'
+        }
+      })
       const token = generateToken(userService.extractUserDataForJWT(newUser));
       const { password: _, ...user } = newUser;
       res.status(200).json({
@@ -87,7 +93,7 @@ class UserAuthentication {
           token,
         },
       });
-      await sendWelcomeEmail(
+       sendWelcomeEmail(
         newUser.email,
         newUser.firstName,
         newUser.lastName,
@@ -134,7 +140,7 @@ class UserAuthentication {
       const hashedToken = await hashPassword(resetToken);
       const expiredAt = new Date(Date.now() + 15 * 60 * 1000);
 
-      // ✅ Save FIRST
+     
       await prismaService.passwordToken.upsert({
         where: { email },
         update: {
@@ -148,7 +154,7 @@ class UserAuthentication {
         },
       });
 
-      // ✅ THEN send email
+   
       await sendResetPasswordEmail(email, resetToken);
 
       res.json({

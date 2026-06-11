@@ -15,14 +15,10 @@ class PaymentController {
     next: NextFunction,
   ) => {
     try {
-      const { amount, email, subscriptionType } = req.body;
+      const { amount, email, plan, planId } = req.body;
       const userId = req.user?.id;
-      // const money = Number;
-
-      // log("amount: ", amount);
-      // log("email: ", email);
-      // log("subscriptionType: ", subscriptionType);
-      // // return;
+      const userRef = req.user?.ref
+      
 
       if (!amount || amount <= 0 || !Number(amount)) {
         throw createHttpError(400, "Valid positive amount is required");
@@ -41,12 +37,14 @@ class PaymentController {
         {
           email,
           amount: amountInKobo,
+          plan,
+          planId,
           callback_url: `${process.env.FRONTEND_URL}/dashboard/premium/verify`,
           metadata: {
             userId,
             email,
-            subscriptionType,
-            cancel_url: `${process.env.FRONTEND_URL}/dashboard/premium/verify`,
+            plan,
+            cancel_url: `${process.env.FRONTEND_URL}/dashboard/profile/me/${userRef}/settings`,
           },
         },
         {
@@ -59,7 +57,7 @@ class PaymentController {
 
       const paymentData = response.data;
 
-      log("response: ", paymentData);
+      // log("response: ", paymentData);
 
       if (!paymentData.status || !paymentData.data?.authorization_url) {
         throw new Error("Paystack did not return a valid checkout URL");
@@ -73,7 +71,8 @@ class PaymentController {
           amount,
           email,
           status: "PENDING",
-          subscriptionType,
+          plan,
+          planId
           // paidAt: Date.now(),
         },
       });
@@ -90,7 +89,7 @@ class PaymentController {
         message: "Payment initialized!, Please do not reload the page",
         authorizationUrl: paymentData.data.authorization_url,
         reference: paymentData.data.reference,
-        subscriptionType,
+        // subscriptionType,
         // accessCode: paymentData.data.access_code,
       });
     } catch (error) {
@@ -197,13 +196,13 @@ class PaymentController {
       });
 
       // ✅ If successful, upgrade the user (uncomment and adapt as needed)
-      // if (newStatus === "SUCCESS") {
-      //   await prismaService.user.update({
-      //     where: { id: existingPayment.userId },
-      //     data: { isPremium: true },
-      //   });
-      // }
-      return;
+      if (newStatus === "SUCCESS") {
+        await prismaService.user.update({
+          where: { id: existingPayment.userId },
+          data: { isPremium: true },
+        });
+      }
+ 
 
       logger.info("Payment verified", { reference, status: newStatus });
 
@@ -244,7 +243,7 @@ class PaymentController {
       const { amount, email, authorization_code } = req.body;
 
       const amountInKobo = amount * 100;
-      const response = await axios.get(
+      const response = await axios.post(
         `${paystackBaseUrl}/transaction/charge_authorization`,
         {
           method: "POST",
@@ -258,7 +257,7 @@ class PaymentController {
           },
         },
       );
-      log("Charge response: ", response.data);
+      // log("Charge response: ", response.data);
     } catch (error) {}
   };
 
@@ -306,48 +305,67 @@ class PaymentController {
       next(createHttpError(500, "Could not cancel payment"));
     }
   };
-  public getPaymentStatus = async (
-    req: AuthenticationRequest,
-    res: Response,
-    next: NextFunction,
-  ) => {
-    try {
-      const userId = req.user?.id;
+ public getPaymentStatus = async (
+  req: AuthenticationRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
 
-      if (!userId) {
-        throw createHttpError(401, "Unauthorized");
-      }
-
-      // ✅ Get all payments for the user
-      const payments = await prismaService.payment.findMany({
-        where: { userId },
-        orderBy: { createdAt: "desc" }, // Most recent first
-      });
-
-      if (!payments || payments.length === 0) {
-        throw createHttpError(404, "No payments found");
-      }
-
-      return res.status(200).json({
-        success: true,
-        message: "Payment status retrieved successfully",
-        data: payments.map((payment) => ({
-          id: payment.id,
-          status: payment.status,
-          reference: payment.reference,
-          amount: payment.amount,
-          paidAt: payment.paidAt,
-          channel: payment.channel,
-          currency: payment.currency,
-          subscriptionType: payment.subscriptionType,
-          createdAt: payment.createdAt,
-          authorization_code: payment.authorization_code,
-        })),
-      });
-    } catch (error) {
-      next(createHttpError(500, "Could not retrieve payment status"));
+    if (!userId) {
+      throw createHttpError(401, "Unauthorized");
     }
-  };
+
+    const page = Math.max(parseInt(req.query.page as string) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit as string) || 2, 100);
+
+    const skip = (page - 1) * limit;
+
+    // ✅ Fetch payments + total count in parallel
+    const [payments, total] = await Promise.all([
+      prismaService.payment.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prismaService.payment.count({
+        where: { userId },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return res.status(200).json({
+      success: true,
+      message: "Payment status retrieved successfully",
+      data: payments.map((payment) => ({
+        id: payment.id,
+        status: payment.status,
+        reference: payment.reference,
+        amount: payment.amount,
+        email: payment.email,
+        paidAt: payment.paidAt,
+        channel: payment.channel,
+        currency: payment.currency,
+        subscriptionType: payment.subscriptionType,
+        createdAt: payment.createdAt,
+        authorization_code: payment.authorization_code,
+      })),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 }
 
 const paymentController = new PaymentController();

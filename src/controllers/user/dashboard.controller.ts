@@ -220,7 +220,7 @@ class DashboardController {
         },
         omit: { password: true },
       });
-      log("User profile data:", user);
+   
       if (!user) throw createHttpError.NotFound("User not found");
 
       res.json({ status: "success", data: user });

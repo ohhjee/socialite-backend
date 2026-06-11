@@ -25,6 +25,29 @@ enum PaymentStatus {
   CANCELLED
 }
 
+enum AdminRole {
+  superAdmin
+  supportAdmin
+}
+
+enum PlanTier {
+  FREE
+  PRO
+  CREATOR
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  EXPIRED
+}
+
+enum PrivacyStatus {
+  PRIVATE
+  PUBLIC
+}
+
 model Group {
   id        Int      @id @default(autoincrement())
   ref       String   @unique @default(uuid())
@@ -93,7 +116,7 @@ model User {
   verification_token_expiry DateTime?
   softDelete                DateTime?
   posts                     Post[]
-  payments                  Payment?
+  payments                  Payment[]
   userGroups                UserGroup[]
   joinedGroups              joinedGroup[]
   groups                    Group[]
@@ -102,7 +125,9 @@ model User {
   conversations             ConversationMember[]
   sentMessages              Message[]            @relation("SentMessages")
   bookmarks                 Bookmark[]
+  subscription              Subscription?
   comments                  Comment[]
+  privacy                   Privacy?
 }
 
 model UserGroup {
@@ -114,6 +139,25 @@ model UserGroup {
   groupId Int
 
   @@unique([userId, groupId])
+}
+
+model Subscription {
+  id                       Int                @id @default(autoincrement())
+  ref                      String             @unique @default(uuid())
+  userId                   Int                @unique
+  plan                     PlanTier           @default(FREE)
+  status                   SubscriptionStatus @default(ACTIVE)
+  interval                 Interval           @default(MONTHLY)
+  paystackSubscriptionCode String? // from Paystack webhook
+  paystackCustomerCode     String?
+  currentPeriodStart       DateTime?
+  currentPeriodEnd         DateTime? // when does this billing cycle end
+  cancelledAt              DateTime?
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments Payment[] // link payments to the subscription
 }
 
 model Like {
@@ -154,16 +198,17 @@ model GroupPost {
 }
 
 model Payment {
-  id                 Int           @id @default(autoincrement())
-  ref                String        @unique @default(uuid())
-  userId             Int           @unique
-  reference          String        @unique
-  amount             Float
-  email              String
-  status             PaymentStatus @default(PENDING)
-  channel            String?
-  currency           String?
-  subscriptionType   String?
+  id        Int           @id @default(autoincrement())
+  ref       String        @unique @default(uuid())
+  userId    Int
+  reference String        @unique
+  amount    Float
+  email     String
+  status    PaymentStatus @default(PENDING)
+  channel   String?
+  currency  String?
+  planId    String?
+
   interval           Interval      @default(MONTHLY)
   paidAt             DateTime?     @default(now())
   metadata           Json?
@@ -171,6 +216,9 @@ model Payment {
   updatedAt          DateTime      @updatedAt
   authorization_code String?
   user               User          @relation(fields: [userId], references: [id])
+  subscriptionId     Int?
+  subscription       Subscription? @relation(fields: [subscriptionId], references: [id])
+  plan               String?
 }
 
 model joinedGroup {
@@ -186,15 +234,18 @@ model joinedGroup {
 }
 
 model Admin {
-  id        Int      @id @default(autoincrement())
-  ref       String   @unique @default(uuid())
+  id        Int       @id @default(autoincrement())
+  ref       String    @unique @default(uuid())
   firstName String
   lastName  String
-  email     String   @unique
+  email     String    @unique
   password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   posts     Post[]
+  role      AdminRole @default(supportAdmin)
+
+  mustChangePassword Boolean @default(true)
 }
 
 model PasswordToken {
@@ -219,10 +270,10 @@ model ConversationMember {
   id             Int          @id @default(autoincrement())
   ref            String       @unique @default(uuid())
   conversationId Int
-  userId         Int
   isAdmin        Boolean      @default(false)
   joinedAt       DateTime     @default(now())
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         Int
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([conversationId, userId])
@@ -237,4 +288,16 @@ model Message {
   createdAt      DateTime     @default(now())
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         User         @relation("SentMessages", fields: [senderId], references: [id])
+}
+
+model Privacy {
+  id               Int     @id @default(autoincrement())
+  privateAccount   Boolean @default(false)
+  showInSearch     Boolean @default(false)
+  suggestAccount   Boolean @default(false)
+  showOnlineStatus Boolean @default(false)
+  showReadReceipts Boolean @default(false)
+  ref              String  @unique @default(uuid())
+  userId           Int     @unique
+  user             User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
